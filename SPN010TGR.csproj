@@ -15,7 +15,7 @@
     <PackageReference Include="System.Globalization" Version="4.3.0" />
     <PackageReference Include="System.IO" Version="4.3.0" />
     <PackageReference Include="System.Runtime" Version="4.3.1" />
-    <PackageReference Include="Twilio" Version="7.13.4" />
+    <PackageReference Include="Twilio" Version="7.13.5" />
   </ItemGroup>
 
   <ItemGroup>

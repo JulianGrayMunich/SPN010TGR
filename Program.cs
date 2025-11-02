@@ -47,6 +47,7 @@ namespace SPN010
 #pragma warning disable CS8601
 #pragma warning disable CS8604
 
+                #region Insantiations, Varibles and Config
 
                 //================[Instantiate the classes]======================================
 
@@ -92,11 +93,15 @@ namespace SPN010
                 string strSurveyWorksheet = config["SurveyWorksheet"];
                 string strCalibrationWorksheet = config["CalibrationWorksheet"];
                 string strHistoricDhworksheet = config["HistoricDhworksheet"];
+                string strHistoricTopworksheet = config["HistoricTopworksheet"];
+                string strHistoricTwistworksheet = config["HistoricTwistworksheet"];
                 string strAlarmsWorksheet = config["AlarmsWorksheet"];
+
 
 
                 string strIncludeHistoricTwist = config["includeHistoricTwist"];
                 string strIncludeHistoricSettlement = config["includeHistoricSettlement"];
+                string strIncludeHistoricTop = config["includeHistoricTop"];
 
                 string strSystemLogsFolder = config["SystemStatusFolder"];
                 string strAlarmfolder = config["SystemAlarmFolder"];
@@ -201,20 +206,10 @@ namespace SPN010
                 string strTab2 = "        ";
                 string strTab3 = "           ";
 
-
-                //================[Actions]======================================
-                // 20240426 Creation of email & SMS alarm facility
-                // 20241014 Updated email function
-                // 20241015 basic housekeeping before big changes
-                // 20241018 Add historic twist worksheet
-                // 20241019 Add fudge values
-                // 20241029 Add ability to take means instead of just latest value
-                // 20241118 Updated mean/latest message as there seems to be an issue with this.
-                // 20241119 Install filter to weed out spurious readings in writeLatestDeltas
-
-                //================[Main program]===========================================================================
+                #endregion
 
 
+                #region Licenses
 
                 //==== Set the EPPlus license
                 ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
@@ -224,7 +219,10 @@ namespace SPN010
                 gnaT.WelcomeMessage($"SPN010TGR {BuildInfo.BuildDateString()}");
 
                 ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
+                #endregion
 
+
+                #region Environment check
                 //==== Environment check
                 Console.WriteLine("\n1. Check system environmentxx");
                 Console.WriteLine(strTab1 + "Check DB connection");
@@ -244,6 +242,10 @@ namespace SPN010
                     if (strIncludeHistoricSettlement == "Yes")
                     {
                         gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strHistoricDhworksheet);
+                    }
+                    if (strIncludeHistoricTop == "Yes")
+                    {
+                        gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strHistoricTopworksheet);
                     }
 
                     int i = 1;
@@ -265,7 +267,10 @@ namespace SPN010
                 {
                     Console.WriteLine(strTab2 + "Workbook & worksheets not checked");
                 }
+                #endregion
 
+
+                #region Timeblocks
 
                 //==== Prepare the time block
 
@@ -325,8 +330,14 @@ namespace SPN010
                 }
 
 
-                //==== Process data ===================================================================================
+                #endregion
 
+
+
+
+                #region Prepare Deltas
+
+                //==== Process data ===================================================================================
                 Console.WriteLine("2. Extract point names");
                 string[] strPointNames = gnaSpreadsheetAPI.readPointNames(strMasterFile, strSurveyWorksheet, strFirstDataRow);
                 Console.WriteLine(strTab1 + "Done");
@@ -372,8 +383,11 @@ namespace SPN010
                     strReferenceWorksheet,
                     strTimeStampLocal);
 
+                #endregion
 
-                Console.WriteLine("7. Write historic twist for each line");
+                #region Write historic data
+
+                Console.WriteLine("7. Write historic twist");
 
                 // write the historic twist data if applicable
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricTwist) &&
@@ -386,6 +400,7 @@ namespace SPN010
                     else
                     {
                         int i = 1; // 1-based indexing retained
+                        string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
 
                         while (i < strTrackWorksheets.Length)
                         {
@@ -403,12 +418,13 @@ namespace SPN010
                             // Sentinel check (case-insensitive)
                             if (trimmed.Equals("blank", StringComparison.OrdinalIgnoreCase))
                             {
-                                Console.WriteLine(strTab1 + $"Sentinel 'blank' encountered at index {i}. Terminating.");
+                                //Console.WriteLine(strTab1 + $"Sentinel 'blank' encountered at index {i}. Terminating.");
                                 break;
                             }
 
                             string strTrackWorksheet = trimmed;
                             string strHistoricTwistWorksheet = strTrackWorksheet + "_HistoricTwist";
+
                             Console.WriteLine(strTab1 + strHistoricTwistWorksheet);
 
                             // Defensive: ensure API call returns a positive column index
@@ -424,21 +440,67 @@ namespace SPN010
                             }
                             else
                             {
-                                int iSourceCol = iFirstEmptyCol - 1;
+                                int iSourceCol = 12;
                                 int iDestinationCol = iFirstEmptyCol;
+
+
+                                // Find the last data row in the Historic Twist worksheet
+                                int iNoOfPrisms = gnaSpreadsheetAPI.countPrisms(strMasterFile, strHistoricTwistWorksheet, "8", 1);
+                                int iRowEnd = 8 + iNoOfPrisms;
+
 
                                 try
                                 {
-                                    gnaSpreadsheetAPI.copyColumnBetweenWorksheets(
+                                    // Copy the header cells
+                                    gnaSpreadsheetAPI.copyColumnSubRange(
                                         strMasterFile,
-                                        strTrackWorksheet,
-                                        strHistoricTwistWorksheet,
-                                        12,                     // source column
+                                        strHistoricTwistWorksheet,  // source worksheet
+                                        3,                      // source column
+                                        strHistoricTwistWorksheet, // destination worksheet
+                                        iFirstEmptyCol,         // destination column
                                         6,                      // source start row
-                                        iDestinationCol,        // destination column
-                                        6,                      // destination start row
-                                        strTimeBlockEndLocal,
-                                        1.0);
+                                        7,                      // source end end
+                                        6                       // destination start row
+                                     );
+
+
+                                    // Insert the timestamp
+                                    gnaSpreadsheetAPI.writeVarToCell(
+                                        strMasterFile,
+                                        strHistoricTwistWorksheet,
+                                        5,
+                                        iFirstEmptyCol,
+                                        strHeaderTime);
+
+
+                                    // Insert the data range
+                                    iSourceCol = 12;     // Column AW in the reference worksheet (dH in mm);
+                                    int iSourceRowStart = 8;   // Row 2 in the reference worksheet
+                                    int iSourceRowEnd = iRowEnd;  // Last row in the source worksheet containing rail prisms.
+                                    int iDestinationRowStart = 8; // Row 8 in the historic dH worksheet
+                                    iDestinationCol = iFirstEmptyCol;
+
+                                    try
+                                    {
+                                        // Copy the data cells
+                                        gnaSpreadsheetAPI.copyColumnSubRange(
+                                            strMasterFile,
+                                            strTrackWorksheet,      // source worksheet
+                                            iSourceCol,             // source column
+                                            strHistoricTwistWorksheet, // destination worksheet
+                                            iDestinationCol,        // destination column
+                                            iSourceRowStart,        // source start row
+                                            iSourceRowEnd,          // source end row
+                                            iDestinationRowStart    // destination start row
+                                         );
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(strTab1 + $"ERROR copying from '{strTrackWorksheet}' → '{strHistoricTwistWorksheet}\n': {ex.Message}");
+                                        Console.ReadKey();
+                                    }
+
                                 }
                                 catch (Exception ex)
                                 {
@@ -551,11 +613,105 @@ namespace SPN010
                     Console.WriteLine(strTab1 + "Not activated");
                 }
 
-//Console.WriteLine("7. Calibration data");
-//string strDistanceColumn = "3";
-//gnaSpreadsheetAPI.populateCalibrationWorksheet(strDBconnection, strTimeBlockStartUTC, strTimeBlockEndUTC, strWorkingFile, strCalibrationWorksheet, strFirstOutputRow, strDistanceColumn, strProjectTitle);
 
-                Console.WriteLine("9. Check target alarms state");
+                // write the historic Top if applicable
+                Console.WriteLine("9. Write historic Top");
+
+                // write the historic Top data if applicable
+                if (!string.IsNullOrWhiteSpace(strIncludeHistoricTop) &&
+                    strIncludeHistoricTop.Trim().Equals("Yes", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine(strTab1 + "Activated");
+
+                    string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
+
+                    // Find first empty column in the Historic data worksheet
+                    int iFirstEmptyCol = gnaSpreadsheetAPI.findFirstEmptyColumn(
+                        strMasterFile,
+                        strHistoricTopworksheet,
+                        "6",
+                        "1");
+
+
+                    // Find the last data row in the Historic data worksheet
+                    int iNoOfPrisms = gnaSpreadsheetAPI.countPrisms(strMasterFile, strHistoricTopworksheet, "8", 1);
+                    int iRowEnd = 8 + iNoOfPrisms;
+
+                    // Copy the header cells
+                    gnaSpreadsheetAPI.copyColumnSubRange(
+                        strMasterFile,
+                        strHistoricTopworksheet,  // source worksheet
+                        3,                      // source column
+                        strHistoricTopworksheet, // destination worksheet
+                        iFirstEmptyCol,         // destination column
+                        6,                      // source start row
+                        7,                      // source end end
+                        6                       // destination start row
+                     );
+
+
+                    // Insert the timestamp
+                    gnaSpreadsheetAPI.writeVarToCell(
+                        strMasterFile,
+                        strHistoricTopworksheet,
+                        5,
+                        iFirstEmptyCol,
+                        strHeaderTime);
+
+
+                    // Insert data range
+                    if (iFirstEmptyCol <= 1)
+                    {
+                        Console.WriteLine(strTab1 + $"WARN: Invalid column index ({iFirstEmptyCol}) for '{strHistoricTopworksheet}'. Skipping.");
+                    }
+                    else
+                    {
+                        int iSourceCol = 50;     // Column AX in the reference worksheet (Top in mm);
+                        int iSourceRowStart = 2;   // Row 2 in the reference worksheet
+                        int iSourceRowEnd = iSourceRowStart + iNoOfPrisms - 1;  // Last row in the reference worksheet containing rail prisms.
+                        int iDestinationRowStart = 8; // Row 8 in the historic dH worksheet
+                        int iDestinationCol = iFirstEmptyCol;
+                        try
+                        {
+                            // Copy the data cells
+                            gnaSpreadsheetAPI.copyColumnSubRange(
+                                strMasterFile,
+                                strReferenceWorksheet,  // source worksheet
+                                iSourceCol,             // source column
+                                strHistoricTopworksheet, // destination worksheet
+                                iDestinationCol,        // destination column
+                                iSourceRowStart,        // source start row
+                                iSourceRowEnd,          // source end row
+                                iDestinationRowStart    // destination start row
+                             );
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(strTab1 + $"ERROR copying from '{strReferenceWorksheet}' → '{strHistoricTopworksheet}\n': {ex.Message}");
+                            Console.ReadKey();
+                        }
+
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(strTab1 + "Not activated");
+                }
+                #endregion
+
+
+
+                #region Calibration data
+                //Console.WriteLine("7. Calibration data");
+                //string strDistanceColumn = "3";
+                //gnaSpreadsheetAPI.populateCalibrationWorksheet(strDBconnection, strTimeBlockStartUTC, strTimeBlockEndUTC, strWorkingFile, strCalibrationWorksheet, strFirstOutputRow, strDistanceColumn, strProjectTitle);
+
+                #endregion
+
+                #region Top,Twist Alarms
+
+                Console.WriteLine("10. Top,Twist alarm state & SMS if alarms");
+
                 string strAlarmMessage = gnaSpreadsheetAPI.SPN010AlarmState(
                     strMasterFile,
                     strAlarmsWorksheet,
@@ -589,6 +745,11 @@ namespace SPN010
                     Console.WriteLine(strTab1 + "No alarms detected");
                 }
 
+                #endregion
+
+
+                #region Export Report
+
                 Console.WriteLine("10. Create the export workbook");
                 gnaSpreadsheetAPI.copyWorkbook(strMasterFile, strExportFile);
                 Console.WriteLine(strTab1 + strExportFile);
@@ -620,184 +781,6 @@ namespace SPN010
                 } while (strTrackWorksheets[j] != "blank");
                 Console.WriteLine(strTab1 + "Done");
 
-
-                //EnterHere:
-                //Console.WriteLine("12. Check alarm state");
-
-                //string txtMessage = "";
-
-                //string smsAlarmState = "No alarms";
-                //strSPN010alarms = config["SPN010alarmNotifications"];
-                //if (strSPN010alarms == "Yes")
-                //{
-                //    Console.WriteLine(strTab1 + "Alarm check activated");
-
-                //    string smsMessage = "";
-                //    string strFullSMSmessage = "";
-                //    j = 1;
-                //    do
-                //    {
-                //        string strTrackWorksheet = strTrackWorksheets[j].Trim();
-                //        //strExportFile = "C:\\_Working_drive\\Woodbrook\\SPN010alarms\\AlarmTest.xlsx";
-
-                //        //strExportFile = "C:\\Woodbrook\\SPN010\\AlarmCheck\\AlarmTest.xlsx";
-
-                //        smsMessage = gnaSpreadsheetAPI.SPN010alarms(strExportFile, strTrackWorksheet, strSMSTitle);
-
-                //        if (smsMessage != "No alarms")
-                //        {
-                //            smsAlarmState = "Alarms";
-                //        }
-
-                //        strFullSMSmessage = strFullSMSmessage + smsMessage + "\n";
-                //        j++;
-                //    } while (strTrackWorksheets[j] != "blank");
-
-                //    string strCurrentAlarmState = strFullSMSmessage;
-
-                //    // Check whether the alarm state has changed & update the Alarm log
-                //    string strSMSaction = gnaT.updateSystemAlarmFile(strAlarmfolder, strCurrentAlarmState);
-                //    //strSMSaction = "SendSMS" / "DoNotSendSMS";
-                //    if (strSMSaction == "SendSMS")
-                //    {
-                //        // Strip out the string "No alarms\n"
-                //        Console.WriteLine(strTab1 + "Send SMS");
-
-                //        strFullSMSmessage = strFullSMSmessage.Replace("No alarms\n", "").Trim();
-
-                //        if (strFullSMSmessage.Length == 0)
-                //        {
-                //            strFullSMSmessage = "alarms cancelled";
-                //        }
-
-                //        // Send the SMS 
-
-                //        bool smsSuccess = gnaT.sendSMSArray(strFullSMSmessage, smsMobile);
-                //        Console.WriteLine(strTab1 + (smsSuccess ? "SMS sent" : "SMS failed"));
-                //        string strMessage = "";
-                //        if (smsSuccess == true)
-                //        {
-                //            strMessage = "SPN010 Report: SMS message sent";
-                //        }
-                //        else
-                //        {
-                //            strMessage = "SPN010 Report: SMS message failed";
-                //        }
-
-                //        gnaT.updateSystemLogFile(strSystemLogsFolder, strMessage);
-
-                //        string strNow = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm") + " : ";
-                //        string strEmailSubstring = "";
-                //        if (smsAlarmState == "No alarms")
-                //        {
-                //            strEmailSubstring = strFullSMSmessage;
-                //        }
-                //        else
-                //        {
-                //            strEmailSubstring = "in alarm state";
-                //        }
-
-                //        strMessage = strNow + "SPN010 Alarm SMS: " + strSMSTitle + " " + strEmailSubstring + " (" + strMobileList + ")";
-                //        gnaT.updateSystemLogFile(strSystemLogsFolder, strMessage);
-
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine(strTab1 + "No SMS sent");
-                //    }
-
-                //    if ((smsAlarmState == "Alarms") && (strSMSaction == "SendSMS"))
-                //    {
-                //        smsAlarmState = "New alarms";
-                //        txtMessage = "Send SMS";
-                //    }
-
-
-                //    if ((smsAlarmState == "Alarms") && (strSMSaction == "DoNotSendSMS"))
-                //    {
-                //        smsAlarmState = "Existing alarms";
-                //        txtMessage = "No SMS";
-
-                //    }
-
-
-                //    if ((smsAlarmState == "No alarms") && (strSMSaction == "SendSMS"))
-                //    {
-                //        smsAlarmState = "Alarms cancelled";
-                //        txtMessage = "Send SMS";
-                //    }
-
-                //    if ((smsAlarmState == "No alarms") && (strSMSaction == "DoNotSendSMS"))
-                //    {
-                //        smsAlarmState = "No alarms";
-                //        txtMessage = "No SMS";
-                //    }
-
-                //    Console.WriteLine(strTab1 + smsAlarmState);
-                //    Console.WriteLine(strTab1 + txtMessage);
-
-                //    //goto ThatsAllFolks;
-
-                //    // email the activity
-
-                //    if (strSMSaction == "SendSMS")
-                //    {
-                //        Console.WriteLine(strTab1 + "Send alarm email");
-                //        strDateTime = DateTime.Now.ToString("yyyyMMdd_HHmm");
-                //        string strAlarmHeading = "ALARM STATUS:" + strSMSTitle + " (" + strDateTime + ")";
-                //        string strMessage = gnaT.addCopyright("SPN010", strFullSMSmessage);
-                //        // updated with the 20240816 license
-                //        string license = gnaT.commercialSoftwareLicense("email");
-                //        SmtpMail oMailSMS = new(license)
-                //        {
-                //            From = strEmailFrom,
-                //            To = new AddressCollection(strEmailRecipients),
-                //            Subject = strAlarmHeading,
-                //            TextBody = strFullSMSmessage
-                //        };
-
-                //        // SMTP server address
-                //        SmtpServer oServerSMS = new("smtp.gmail.com")
-                //        {
-                //            User = strEmailLogin,
-                //            Password = strEmailPassword,
-                //            ConnectType = SmtpConnectType.ConnectTryTLS,
-                //            Port = 587
-                //        };
-
-                //        //Set sender email address, please change it to yours
-
-
-                //        SmtpClient oSmtpSMS = new();
-                //        oSmtpSMS.SendMail(oServerSMS, oMailSMS);
-
-                //        strMessage = strAlarmHeading + " (emailed " + strEmailRecipients + ")";
-
-                //        gnaT.updateSystemLogFile(strSystemLogsFolder, strMessage);
-
-                //        Console.WriteLine(strTab1 + "Alarm email sent");
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine(strTab1 + "No alarm email sent");
-
-                //        if (strAlarmVersion == "Yes")
-                //        {
-                //            // delete the working file
-                //            Console.WriteLine(strTab1 + "Working file deleted");
-                //            gnaSpreadsheetAPI.deleteWorkbook(strWorkingFile);
-                //            Console.WriteLine(strTab1 + "Export file deleted");
-                //            // delete the export file strExportFile
-                //            gnaSpreadsheetAPI.deleteWorkbook(strExportFile);
-                //        }
-
-                //    }
-                //}
-                //else
-                //{
-                //    Console.WriteLine(strTab1 + "Alarm check not activated");
-                //}
-
                 Console.WriteLine("12. email the export workbook");
 
                 if (strSendEmails == "Yes")
@@ -826,12 +809,9 @@ namespace SPN010
     "Top between 7.5 and 10: 7.5\n" +
     "Top over 10mm: 10";
 
-                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\n" + strSPN010TriggerHeader+"\n\nCurrent Project State\n" +
+                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\n" + strSPN010TriggerHeader + "\n\nCurrent Project State\n" +
                                 strAlarmMessage +
                                 "\n\nPlease review and forward to the client. \nDo not reply to this email.";
-
-                            Console.WriteLine(strMessage);
-                            Console.ReadKey();
 
                         }
                         else
@@ -886,6 +866,8 @@ namespace SPN010
                 {
                     Console.WriteLine(strTab1 + "No email sent");
                 }
+
+#endregion
 
 ThatsAllFolks:
 
