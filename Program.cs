@@ -720,8 +720,8 @@ namespace SPN010
 
                 if (strAlarmMessage != "No alarms")
                 {
-                    Console.WriteLine(strTab1 + "Alarms detected");
-                    Console.WriteLine(strTab2 + strAlarmMessage);
+                    Console.WriteLine(strTab1 + "Alarms detected:\n");
+                    Console.WriteLine(strAlarmMessage+"\n"); // multiline causes odd output alignment in console
                     strAlarmMessage = strSMSTitle + ":\n" + strAlarmMessage;
 
                     // Send the Alarm SMS 
