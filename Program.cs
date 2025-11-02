@@ -721,6 +721,7 @@ namespace SPN010
                 if (strAlarmMessage != "No alarms")
                 {
                     Console.WriteLine(strTab1 + "Alarms detected");
+                    Console.WriteLine(strTab2 + strAlarmMessage);
                     strAlarmMessage = strSMSTitle + ":\n" + strAlarmMessage;
 
                     // Send the Alarm SMS 
@@ -809,14 +810,13 @@ namespace SPN010
     "Top between 7.5 and 10: 7.5\n" +
     "Top over 10mm: 10";
 
-                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\n" + strSPN010TriggerHeader + "\n\nCurrent Project State\n" +
-                                strAlarmMessage +
-                                "\n\nPlease review and forward to the client. \nDo not reply to this email.";
-
+                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\n+Current Project State:\n" + strAlarmMessage+"\n\n"+
+                              strSPN010TriggerHeader  +
+                              "\n\nPlease review and forward to the client. \nDo not reply to this email.";
                         }
                         else
                         {
-                            strMessage = "This is an automated " + strReportSpec + " track geometry report. \nPlease review and forward to the client. \nDo not reply to this email.";
+                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\nCurrent Project State: OK\n\nPlease review and forward to the client. \nDo not reply to this email.";
                         }
 
                         strMessage = gnaT.addCopyright("SPN010", strMessage);
