@@ -79,6 +79,7 @@ namespace SPN010
                 string strAlarmVersion = config["AlarmVersion"];
                 string strDeleteMissingValues = config["DeleteMissingValues"];
                 string strLatestValueOnly = config["LatestValueOnly"];
+                string strRecordHistoricData = config["recordHistoricData"];
 
                 string strProjectTitle = config["ProjectTitle"];
                 string strContractTitle = config["ContractTitle"];
@@ -102,6 +103,7 @@ namespace SPN010
                 string strIncludeHistoricTwist = config["includeHistoricTwist"];
                 string strIncludeHistoricSettlement = config["includeHistoricSettlement"];
                 string strIncludeHistoricTop = config["includeHistoricTop"];
+                string strIncludeMissingTargets = config["includeMissingTargets"];
 
                 string strSystemLogsFolder = config["SystemStatusFolder"];
                 string strAlarmfolder = config["SystemAlarmFolder"];
@@ -333,7 +335,7 @@ namespace SPN010
                 #endregion
 
 
-
+//goto checkAlarmMessage;
 
                 #region Prepare Deltas
 
@@ -387,7 +389,23 @@ namespace SPN010
 
                 #region Write historic data
 
-                Console.WriteLine("7. Write historic twist");
+
+                if (strAlarmVersion == "Yes")
+                {
+                    Console.WriteLine("7. Write historic data");
+                    Console.WriteLine(strTab1 + "Alarm version activated - skipping historic data update.");
+                    goto CalibrationData;
+                }
+                else if (strRecordHistoricData != "Yes")
+                {
+                    Console.WriteLine("7. Write historic data");
+                    Console.WriteLine(strTab1 + "Historic data recording not activated - skipping historic data update.");
+                    goto CalibrationData;
+                }
+
+
+
+                Console.WriteLine(strTab1 + "Write historic twist");
 
                 // write the historic twist data if applicable
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricTwist) &&
@@ -395,7 +413,7 @@ namespace SPN010
                 {
                     if (strTrackWorksheets == null || strTrackWorksheets.Length <= 1)
                     {
-                        Console.WriteLine(strTab1 + "No valid track worksheets supplied.");
+                        Console.WriteLine(strTab2 + "No valid track worksheets supplied.");
                     }
                     else
                     {
@@ -409,7 +427,7 @@ namespace SPN010
                             // Guard null or empty elements
                             if (string.IsNullOrWhiteSpace(entry))
                             {
-                                Console.WriteLine(strTab1 + $"Null or empty entry at index {i}. Terminating.");
+                                Console.WriteLine(strTab2 + $"Null or empty entry at index {i}. Terminating.");
                                 break;
                             }
 
@@ -516,17 +534,17 @@ namespace SPN010
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(strTab1 + $"ERROR formatting HistoricTwist: {ex.Message}");
+                            Console.WriteLine(strTab2 + $"ERROR formatting HistoricTwist: {ex.Message}");
                         }
                     }
                 }
                 else
                 {
-                    Console.WriteLine(strTab1 + "Not activated");
+                    Console.WriteLine(strTab2 + "Not activated");
                 }
 
 
-                Console.WriteLine("8. Write historic heave/settlement");
+                Console.WriteLine(strTab1 + "Write historic dH");
 
                 // write the historic dH data if applicable
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricSettlement) &&
@@ -610,12 +628,12 @@ namespace SPN010
                 }
                 else
                 {
-                    Console.WriteLine(strTab1 + "Not activated");
+                    Console.WriteLine(strTab2 + "Not activated");
                 }
 
 
                 // write the historic Top if applicable
-                Console.WriteLine("9. Write historic Top");
+                Console.WriteLine(strTab1 + "Write historic Top");
 
                 // write the historic Top data if applicable
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricTop) &&
@@ -662,7 +680,7 @@ namespace SPN010
                     // Insert data range
                     if (iFirstEmptyCol <= 1)
                     {
-                        Console.WriteLine(strTab1 + $"WARN: Invalid column index ({iFirstEmptyCol}) for '{strHistoricTopworksheet}'. Skipping.");
+                        Console.WriteLine(strTab2 + $"WARN: Invalid column index ({iFirstEmptyCol}) for '{strHistoricTopworksheet}'. Skipping.");
                     }
                     else
                     {
@@ -687,7 +705,7 @@ namespace SPN010
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(strTab1 + $"ERROR copying from '{strReferenceWorksheet}' → '{strHistoricTopworksheet}\n': {ex.Message}");
+                            Console.WriteLine(strTab2 + $"ERROR copying from '{strReferenceWorksheet}' → '{strHistoricTopworksheet}\n': {ex.Message}");
                             Console.ReadKey();
                         }
 
@@ -695,34 +713,45 @@ namespace SPN010
                 }
                 else
                 {
-                    Console.WriteLine(strTab1 + "Not activated");
+                    Console.WriteLine(strTab2 + "Not activated");
                 }
-                #endregion
+#endregion
 
+
+CalibrationData:
 
 
                 #region Calibration data
-                //Console.WriteLine("7. Calibration data");
-                //string strDistanceColumn = "3";
-                //gnaSpreadsheetAPI.populateCalibrationWorksheet(strDBconnection, strTimeBlockStartUTC, strTimeBlockEndUTC, strWorkingFile, strCalibrationWorksheet, strFirstOutputRow, strDistanceColumn, strProjectTitle);
+                Console.WriteLine("8. Calibration data");
+                Console.WriteLine(strTab1 + "Skip this section");
+//string strDistanceColumn = "3";
+//gnaSpreadsheetAPI.populateCalibrationWorksheet(strDBconnection, strTimeBlockStartUTC, strTimeBlockEndUTC, strWorkingFile, strCalibrationWorksheet, strFirstOutputRow, strDistanceColumn, strProjectTitle);
 
-                #endregion
+#endregion
 
-                #region Top,Twist Alarms
+#region Top,twist, missing targets alarms
 
-                Console.WriteLine("10. Top,Twist alarm state & SMS if alarms");
+
+
+//checkAlarmMessage:
+
+
+                Console.WriteLine("9. Top,Twist alarm state & SMS if alarms");
 
                 string strAlarmMessage = gnaSpreadsheetAPI.SPN010AlarmState(
                     strMasterFile,
                     strAlarmsWorksheet,
-                    iFirstTrackRow);
+                    iFirstTrackRow,
+                    strIncludeMissingTargets);
 
 
-                if (strAlarmMessage != "No alarms")
+                if (strAlarmMessage != "No Alarm")
                 {
                     Console.WriteLine(strTab1 + "Alarms detected:\n");
-                    Console.WriteLine(strAlarmMessage+"\n"); // multiline causes odd output alignment in console
-                    strAlarmMessage = strSMSTitle + ":\n" + strAlarmMessage;
+                    Console.WriteLine(strAlarmMessage + "\n"); // multiline causes odd output alignment in console
+
+                    string strTimeNow = DateTime.Now.ToString("HH'h'mm");
+                    strAlarmMessage = strSMSTitle + ":"+ strTimeNow + "\n" + strAlarmMessage;
 
                     // Send the Alarm SMS 
 
@@ -810,8 +839,8 @@ namespace SPN010
     "Top between 7.5 and 10: 7.5\n" +
     "Top over 10mm: 10";
 
-                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\n+Current Project State:\n" + strAlarmMessage+"\n\n"+
-                              strSPN010TriggerHeader  +
+                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\nCurrent Project State:\n" + strAlarmMessage + "\n\n" +
+                              strSPN010TriggerHeader +
                               "\n\nPlease review and forward to the client. \nDo not reply to this email.";
                         }
                         else
