@@ -11,6 +11,8 @@ using EASendMail;
 
 using gnaDataClasses;
 
+using GNA_CommercialLicenseValidator;
+
 using GNAgeneraltools;
 
 using GNAspreadsheettools;
@@ -47,6 +49,9 @@ namespace SPN010
 #pragma warning disable CS8601
 #pragma warning disable CS8604
 
+
+
+
                 #region Insantiations, Varibles and Config
 
                 //================[Instantiate the classes]======================================
@@ -57,8 +62,28 @@ namespace SPN010
                 spreadsheetAPI gnaSpreadsheetAPI = new();
                 gnaDataClass gnaDC = new();
 
-                // Vetify the local config file.
+
+                #region Check Config file and license
+                Console.WriteLine("Checking license and config file");
                 gnaT.VerifyLocalConfig();
+
+                var config = ConfigurationManager.AppSettings;
+
+                string licenseCode = config["LicenseCode"] ?? string.Empty;
+                if (string.IsNullOrEmpty(licenseCode))
+                {
+                    Console.WriteLine("License code is not set in the configuration file.");
+                    return;
+                }
+
+                // GNA license for SPN010 software
+                Console.WriteLine("Validating the software license...");
+
+                LicenseValidator.ValidateLicense("SPN010", licenseCode);
+                Console.WriteLine("     Validated");
+
+                #endregion
+
 
                 //================[Console settings]======================================
                 Console.OutputEncoding = System.Text.Encoding.Unicode;
@@ -74,7 +99,7 @@ namespace SPN010
 
                 string strDBconnection = ConfigurationManager.ConnectionStrings["DBconnectionString"].ConnectionString;
 
-                var config = ConfigurationManager.AppSettings;
+
                 string strFreezeScreen = config["freezeScreen"];
                 string strAlarmVersion = config["AlarmVersion"];
                 string strDeleteMissingValues = config["DeleteMissingValues"];
@@ -210,11 +235,16 @@ namespace SPN010
 
                 #endregion
 
-
                 #region Licenses
 
                 //==== Set the EPPlus license
                 ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
+
+                // GNA license for SPN010 software
+                Console.WriteLine("Validating the software license...");
+
+                LicenseValidator.ValidateLicense("JWGTGM", licenseCode);
+                Console.WriteLine(strTab1 + "Validated");
 
 
                 // Welcome message
