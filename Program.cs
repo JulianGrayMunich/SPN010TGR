@@ -123,7 +123,7 @@ namespace SPN010
                 string strHistoricTwistworksheet = config["HistoricTwistworksheet"];
                 string strAlarmsWorksheet = config["AlarmsWorksheet"];
 
-
+                string strWorkbookPassword = config["WorkbookPassword"];
 
                 string strIncludeHistoricTwist = config["includeHistoricTwist"];
                 string strIncludeHistoricSettlement = config["includeHistoricSettlement"];
@@ -240,12 +240,6 @@ namespace SPN010
                 //==== Set the EPPlus license
                 ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
 
-                // GNA license for SPN010 software
-                Console.WriteLine("Validating the software license...");
-
-                LicenseValidator.ValidateLicense("JWGTGM", licenseCode);
-                Console.WriteLine(strTab1 + "Validated");
-
 
                 // Welcome message
                 gnaT.WelcomeMessage($"SPN010TGR {BuildInfo.BuildDateString()}");
@@ -300,6 +294,8 @@ namespace SPN010
                     Console.WriteLine(strTab2 + "Workbook & worksheets not checked");
                 }
                 #endregion
+
+
 
 
                 #region Timeblocks
@@ -363,6 +359,8 @@ namespace SPN010
 
 
                 #endregion
+
+//goto ExportWorkbook;
 
 
 //goto checkAlarmMessage;
@@ -759,7 +757,7 @@ CalibrationData:
 
 #endregion
 
-#region Top,twist, missing targets alarms
+                #region Top,twist, missing targets alarms
 
 
 
@@ -805,15 +803,22 @@ CalibrationData:
                     Console.WriteLine(strTab1 + "No alarms detected");
                 }
 
-                #endregion
+#endregion
 
 
-                #region Export Report
+#region Export Report
+
+//ExportWorkbook:
 
                 Console.WriteLine("10. Create the export workbook");
                 gnaSpreadsheetAPI.copyWorkbook(strMasterFile, strExportFile);
                 Console.WriteLine(strTab1 + strExportFile);
-                Console.WriteLine(strTab1 + "Done");
+                Console.WriteLine(strTab2 + "Done");
+
+
+
+
+
 
                 Console.WriteLine("11. Clean export workbook to match SPN010 template");
                 int j = 1;
@@ -839,9 +844,25 @@ CalibrationData:
 
                     j++;
                 } while (strTrackWorksheets[j] != "blank");
-                Console.WriteLine(strTab1 + "Done");
 
-                Console.WriteLine("12. email the export workbook");
+
+
+                Console.WriteLine("12. Freeze the export workbook");
+                Console.WriteLine(strTab1 + "Hide " + strReferenceWorksheet);
+                gnaSpreadsheetAPI.hideWorksheet(strExportFile, strReferenceWorksheet);
+                Console.WriteLine(strTab2 + "Done");
+                Console.WriteLine(strTab1 + "Hide " + strReferenceWorksheet);
+                gnaSpreadsheetAPI.hideWorksheet(strExportFile, strAlarmsWorksheet);
+                Console.WriteLine(strTab2 + "Done");
+                Console.WriteLine(strTab1 + "Freeze " + strExportFile);
+                gnaSpreadsheetAPI.freezeWorkbook(strExportFile, strWorkbookPassword);
+                Console.WriteLine(strTab2 + "Done");
+
+
+
+
+
+                Console.WriteLine("13. email the export workbook");
 
                 if (strSendEmails == "Yes")
                 {
@@ -930,10 +951,9 @@ CalibrationData:
 
 ThatsAllFolks:
 
-                Console.WriteLine("\nSPN010 report completed...");
+                Console.WriteLine("\nSPN010 report completed...\n\n");
                 gnaT.freezeScreen(strFreezeScreen);
                 Environment.Exit(0);
-
 
             }
             catch (Exception ex)
