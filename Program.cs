@@ -52,20 +52,22 @@ namespace SPN010
 
 
 
-                #region Insantiations, Varibles and Config
-
                 //================[Instantiate the classes]======================================
 
+
+
+                #region Check Config file and license
                 gnaTools gnaT = new();
                 dbAPI gnaDBAPI = new();
                 GNAsurveycalcs gnaSurvey = new();
                 spreadsheetAPI gnaSpreadsheetAPI = new();
                 gnaDataClass gnaDC = new();
 
-
-                #region Check Config file and license
+                gnaT.GNAheader();
+                
                 Console.WriteLine("Checking license and config file");
                 gnaT.VerifyLocalConfig();
+
 
                 var config = ConfigurationManager.AppSettings;
 
@@ -82,9 +84,26 @@ namespace SPN010
                 LicenseValidator.ValidateLicense("SPN010", licenseCode);
                 Console.WriteLine("     Validated");
 
+                // Welcome message
+                gnaT.WelcomeMessage($"SPN010TGR {BuildInfo.BuildDateString()}");
+
+
+                //==== Set the EPPlus license
+                ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
+
+
+
+
+                ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
+
+
+
+
+
                 #endregion
 
 
+                #region Variables
                 //================[Console settings]======================================
                 Console.OutputEncoding = System.Text.Encoding.Unicode;
 
@@ -146,20 +165,6 @@ namespace SPN010
                 strTrackWorksheets[10] = config["Worksheet10"];
                 strTrackWorksheets[11] = "blank";
 
-
-                strfudgeTargets[0] = "blank";
-                strfudgeTargets[1] = config["fudgeTarget1"];
-                strfudgeTargets[2] = config["fudgeTarget2"];
-                strfudgeTargets[3] = config["fudgeTarget3"];
-                strfudgeTargets[4] = config["fudgeTarget4"];
-                strfudgeTargets[5] = config["fudgeTarget5"];
-                strfudgeTargets[6] = config["fudgeTarget6"];
-                strfudgeTargets[7] = config["fudgeTarget7"];
-                strfudgeTargets[8] = config["fudgeTarget8"];
-                strfudgeTargets[9] = config["fudgeTarget9"];
-                strfudgeTargets[10] = config["fudgeTarget10"];
-                strfudgeTargets[11] = "blank";
-
                 string strFirstDataRow = config["FirstDataRow"];
                 string strFirstOutputRow = config["FirstOutputRow"];
                 string strFirstDataCol = config["FirstDataCol"];
@@ -208,7 +213,6 @@ namespace SPN010
                 string strExportFile = "";
 
 
-                #region SMS numbers
 
                 List<string> smsMobile = new();
                 string strMobileList = "";
@@ -227,24 +231,12 @@ namespace SPN010
                 }
                 //Console.WriteLine(strTab1 + "Mobile list: " + strMobileList);
                 //Console.ReadKey();
-                #endregion
+
 
                 string strTab1 = "     ";
                 string strTab2 = "        ";
                 string strTab3 = "           ";
 
-                #endregion
-
-                #region Licenses
-
-                //==== Set the EPPlus license
-                ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
-
-
-                // Welcome message
-                gnaT.WelcomeMessage($"SPN010TGR {BuildInfo.BuildDateString()}");
-
-                ExcelPackage.License.SetCommercial("14XO1NhmOmVcqDWhA0elxM72um6vnYOS8UiExVFROZuRPn1Ddv5fRV8fiCPcjujkdw9H18nExINNFc8nmOjRIQEGQzVDRjMz5wdPAJkEAQEA");  //valid to 23.03.2026
                 #endregion
 
 
@@ -294,8 +286,6 @@ namespace SPN010
                     Console.WriteLine(strTab2 + "Workbook & worksheets not checked");
                 }
                 #endregion
-
-
 
 
                 #region Timeblocks
@@ -360,10 +350,6 @@ namespace SPN010
 
                 #endregion
 
-//goto ExportWorkbook;
-
-
-//goto checkAlarmMessage;
 
                 #region Prepare Deltas
 
@@ -415,25 +401,22 @@ namespace SPN010
 
                 #endregion
 
+
                 #region Write historic data
 
-
+                Console.WriteLine("7. Write historic data");
                 if (strAlarmVersion == "Yes")
                 {
-                    Console.WriteLine("7. Write historic data");
                     Console.WriteLine(strTab1 + "Alarm version activated - skipping historic data update.");
                     goto CalibrationData;
                 }
                 else if (strRecordHistoricData != "Yes")
                 {
-                    Console.WriteLine("7. Write historic data");
                     Console.WriteLine(strTab1 + "Historic data recording not activated - skipping historic data update.");
                     goto CalibrationData;
                 }
 
-
-
-                Console.WriteLine(strTab1 + "Write historic twist");
+               Console.WriteLine(strTab1 + "Write historic twist");
 
                 // write the historic twist data if applicable
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricTwist) &&
@@ -556,14 +539,6 @@ namespace SPN010
                             i++;
                         }
 
-                        try
-                        {
-
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(strTab2 + $"ERROR formatting HistoricTwist: {ex.Message}");
-                        }
                     }
                 }
                 else
@@ -580,9 +555,7 @@ namespace SPN010
                 {
                     Console.WriteLine(strTab1 + "Activated");
 
-
                     string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
-
 
                     // Find first empty column in the Historic data worksheet
                     int iFirstEmptyCol = gnaSpreadsheetAPI.findFirstEmptyColumn(
@@ -748,8 +721,7 @@ namespace SPN010
 
 CalibrationData:
 
-
-                #region Calibration data
+#region Calibration data
                 Console.WriteLine("8. Calibration data");
                 Console.WriteLine(strTab1 + "Skip this section");
 //string strDistanceColumn = "3";
@@ -758,10 +730,6 @@ CalibrationData:
 #endregion
 
                 #region Top,twist, missing targets alarms
-
-
-
-//checkAlarmMessage:
 
 
                 Console.WriteLine("9. Top,Twist alarm state & SMS if alarms");
@@ -776,7 +744,7 @@ CalibrationData:
                 if (strAlarmMessage != "No Alarm")
                 {
                     Console.WriteLine(strTab1 + "Alarms detected:\n");
-                    Console.WriteLine(strAlarmMessage + "\n"); // multiline causes odd output alignment in console
+                    Console.WriteLine(strAlarmMessage + "\n\n"); // multiline causes odd output alignment in console
 
                     string strTimeNow = DateTime.Now.ToString("HH'h'mm");
                     strAlarmMessage = strSMSTitle + ":"+ strTimeNow + "\n" + strAlarmMessage;
@@ -806,7 +774,7 @@ CalibrationData:
 #endregion
 
 
-#region Export Report
+                #region Prepare & send the export Report
 
 //ExportWorkbook:
 
@@ -814,11 +782,6 @@ CalibrationData:
                 gnaSpreadsheetAPI.copyWorkbook(strMasterFile, strExportFile);
                 Console.WriteLine(strTab1 + strExportFile);
                 Console.WriteLine(strTab2 + "Done");
-
-
-
-
-
 
                 Console.WriteLine("11. Clean export workbook to match SPN010 template");
                 int j = 1;
@@ -846,7 +809,6 @@ CalibrationData:
                 } while (strTrackWorksheets[j] != "blank");
 
 
-
                 Console.WriteLine("12. Freeze the export workbook");
                 Console.WriteLine(strTab1 + "Hide " + strReferenceWorksheet);
                 gnaSpreadsheetAPI.hideWorksheet(strExportFile, strReferenceWorksheet);
@@ -857,9 +819,6 @@ CalibrationData:
                 Console.WriteLine(strTab1 + "Freeze " + strExportFile);
                 gnaSpreadsheetAPI.freezeWorkbook(strExportFile, strWorkbookPassword);
                 Console.WriteLine(strTab2 + "Done");
-
-
-
 
 
                 Console.WriteLine("13. email the export workbook");
