@@ -112,7 +112,7 @@ namespace SPN010
                 String[] strRO1 = new String[50];
                 String[] strWorksheetName = new String[50];
                 string[] strTrackWorksheets = new String[50];
-                string[] strfudgeTargets = new String[20];
+
 
                 //================[Configuration variables]==================================================================
 
@@ -120,6 +120,7 @@ namespace SPN010
 
 
                 string strFreezeScreen = config["freezeScreen"];
+                string strStopAtAlarmMessage = config["stopAtAlarmMessage"];     
                 string strAlarmVersion = config["AlarmVersion"];
                 string strDeleteMissingValues = config["DeleteMissingValues"];
                 string strLatestValueOnly = config["LatestValueOnly"];
@@ -212,8 +213,6 @@ namespace SPN010
                 string strWorkingFile = "";
                 string strExportFile = "";
 
-
-
                 List<string> smsMobile = new();
                 string strMobileList = "";
                 var allKeys = config.AllKeys;
@@ -229,13 +228,15 @@ namespace SPN010
                         strMobileList += value;
                     }
                 }
-                //Console.WriteLine(strTab1 + "Mobile list: " + strMobileList);
-                //Console.ReadKey();
-
 
                 string strTab1 = "     ";
                 string strTab2 = "        ";
                 string strTab3 = "           ";
+
+
+
+
+
 
                 #endregion
 
@@ -740,14 +741,20 @@ CalibrationData:
                     iFirstTrackRow,
                     strIncludeMissingTargets);
 
+                string strTimeNow = DateTime.Now.ToString("HH'h'mm");
+                string strTempMessage = strSMSTitle + ":" + strTimeNow + "\n" + strAlarmMessage;
+                gnaT.pauseExecution(strStopAtAlarmMessage, strAlarmMessage);
+
 
                 if (strAlarmMessage != "No Alarm")
                 {
-                    Console.WriteLine(strTab1 + "Alarms detected:\n");
-                    Console.WriteLine(strAlarmMessage + "\n\n"); // multiline causes odd output alignment in console
+                    if (strStopAtAlarmMessage == "No")
+                    {
+                        Console.WriteLine(strTab1 + "Alarms detected:\n");
+                        Console.WriteLine(strAlarmMessage + "\n\n"); // multiline causes odd output alignment in console
+                    }
 
-                    string strTimeNow = DateTime.Now.ToString("HH'h'mm");
-                    strAlarmMessage = strSMSTitle + ":"+ strTimeNow + "\n" + strAlarmMessage;
+                    strAlarmMessage = strSMSTitle + ":" + strTimeNow + "\n" + strAlarmMessage;
 
                     // Send the Alarm SMS 
 
@@ -774,7 +781,7 @@ CalibrationData:
 #endregion
 
 
-                #region Prepare & send the export Report
+                #region Prepare the export Report
 
 //ExportWorkbook:
 
@@ -819,6 +826,11 @@ CalibrationData:
                 Console.WriteLine(strTab1 + "Freeze " + strExportFile);
                 gnaSpreadsheetAPI.freezeWorkbook(strExportFile, strWorkbookPassword);
                 Console.WriteLine(strTab2 + "Done");
+
+
+                #endregion
+
+                #region Send the export Report
 
 
                 Console.WriteLine("13. email the export workbook");
