@@ -111,7 +111,7 @@ namespace SPN010
 
                 String[] strRO1 = new String[50];
                 String[] strWorksheetName = new String[50];
-                string[] strTrackWorksheets = new String[50];
+                //string[] strTrackWorksheets = new String[50];
 
 
                 //================[Configuration variables]==================================================================
@@ -153,18 +153,35 @@ namespace SPN010
                 string strSystemLogsFolder = config["SystemStatusFolder"];
                 string strAlarmfolder = config["SystemAlarmFolder"];
 
-                strTrackWorksheets[0] = strReferenceWorksheet;
-                strTrackWorksheets[1] = config["Worksheet1"];
-                strTrackWorksheets[2] = config["Worksheet2"];
-                strTrackWorksheets[3] = config["Worksheet3"];
-                strTrackWorksheets[4] = config["Worksheet4"];
-                strTrackWorksheets[5] = config["Worksheet5"];
-                strTrackWorksheets[6] = config["Worksheet6"];
-                strTrackWorksheets[7] = config["Worksheet7"];
-                strTrackWorksheets[8] = config["Worksheet8"];
-                strTrackWorksheets[9] = config["Worksheet9"];
-                strTrackWorksheets[10] = config["Worksheet10"];
-                strTrackWorksheets[11] = "blank";
+                
+                //strTrackWorksheets[1] = config["Worksheet1"];
+                //strTrackWorksheets[2] = config["Worksheet2"];
+                //strTrackWorksheets[3] = config["Worksheet3"];
+                //strTrackWorksheets[4] = config["Worksheet4"];
+                //strTrackWorksheets[5] = config["Worksheet5"];
+                //strTrackWorksheets[6] = config["Worksheet6"];
+                //strTrackWorksheets[7] = config["Worksheet7"];
+                //strTrackWorksheets[8] = config["Worksheet8"];
+                //strTrackWorksheets[9] = config["Worksheet9"];
+                //strTrackWorksheets[10] = config["Worksheet10"];
+                //strTrackWorksheets[11] = "blank";
+
+                #region Track Definitions
+                var strTrackWorksheets = new List<string>();
+                // Add the reference worksheet as the first item
+                strTrackWorksheets.Add(strReferenceWorksheet);
+
+                // Read all configured tracks dynamically (Track1, Track2, ..., TrackN)
+                foreach (var key0 in ConfigurationManager.AppSettings.AllKeys)
+                {
+                    if (key0.StartsWith("Track", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var value = ConfigurationManager.AppSettings[key0]?.Trim();
+                        if (!string.IsNullOrEmpty(value))
+                            strTrackWorksheets.Add(value);
+                    }
+                }
+                #endregion
 
                 string strFirstDataRow = config["FirstDataRow"];
                 string strFirstOutputRow = config["FirstOutputRow"];
@@ -186,6 +203,7 @@ namespace SPN010
                 string strTimeBlockStartUTC = "";
                 string strTimeBlockEndUTC = "";
                 string strEmailTime = "";
+                string logFileMessage = "";
 
                 string strTempString = "";
 
@@ -253,7 +271,7 @@ namespace SPN010
                 {
                     Console.WriteLine(strTab2 + "Project: " + strProjectTitle);
                     Console.WriteLine(strTab2 + "Report type: " + strReportSpec);
-                    Console.WriteLine(strTab2 + "Master workbook: " + strMasterWorkbookFullPath);
+                    Console.WriteLine(strTab2 + "Master workbook: " + strExcelFile);
                     gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strReferenceWorksheet);
                     gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strSurveyWorksheet);
                     gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strAlarmsWorksheet);
@@ -267,18 +285,44 @@ namespace SPN010
                         gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strHistoricTopworksheet);
                     }
 
-                    int i = 1;
-                    do
-                    {
-                        string strTrackWorksheet = strTrackWorksheets[i].Trim();
-                        gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet);
 
+
+
+                    //int i = 1;
+                    //do
+                    //{
+                    //    string strTrackWorksheet = strTrackWorksheets[i].Trim();
+                    //    gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet);
+
+                    //    if (strIncludeHistoricTwist == "Yes")
+                    //    {
+                    //        gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet + "_HistoricTwist");
+                    //    }
+                    //    i++;
+                    //} while (strTrackWorksheets[i] != "blank");
+
+                    int i = 1;  // skip index 0 (reference worksheet)
+
+                    while (i < strTrackWorksheets.Count)
+                    {
+                        string entry = strTrackWorksheets[i];
+                        if (string.IsNullOrWhiteSpace(entry))
+                            break;  // stop safely on empty/missing values
+
+                        string strTrackWorksheet = entry.Trim();
+                        gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet);
                         if (strIncludeHistoricTwist == "Yes")
                         {
-                            gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet + "_HistoricTwist");
+                            gnaSpreadsheetAPI.checkWorksheetExists(
+                                strMasterWorkbookFullPath,
+                                strTrackWorksheet + "_HistoricTwist");
                         }
                         i++;
-                    } while (strTrackWorksheets[i] != "blank");
+                    }
+
+
+
+
 
                     Console.WriteLine(strTab2 + "Done");
                 }
@@ -342,7 +386,7 @@ namespace SPN010
                 }
                 else
                 {
-                    strExportFile = strExcelPath + strContractTitle + "_" + strReportType + "_" + strDateTime + ".xlsx";
+                    strExportFile = strExcelPath + strContractTitle + "_" + strReportType + "_" + "DateTime" + ".xlsx";
                     strWorkingFile = strExportFile;
                     strMasterFile = strExcelPath + strExcelFile;
                     strTimeStampLocal = strDateTime;
@@ -423,7 +467,9 @@ namespace SPN010
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricTwist) &&
                     strIncludeHistoricTwist.Trim().Equals("Yes", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (strTrackWorksheets == null || strTrackWorksheets.Length <= 1)
+
+
+                    if (strTrackWorksheets == null || strTrackWorksheets.Count <= 1)
                     {
                         Console.WriteLine(strTab2 + "No valid track worksheets supplied.");
                     }
@@ -432,7 +478,7 @@ namespace SPN010
                         int i = 1; // 1-based indexing retained
                         string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
 
-                        while (i < strTrackWorksheets.Length)
+                        while (i < strTrackWorksheets.Count)
                         {
                             string? entry = strTrackWorksheets[i];
 
@@ -444,13 +490,6 @@ namespace SPN010
                             }
 
                             string trimmed = entry.Trim();
-
-                            // Sentinel check (case-insensitive)
-                            if (trimmed.Equals("blank", StringComparison.OrdinalIgnoreCase))
-                            {
-                                //Console.WriteLine(strTab1 + $"Sentinel 'blank' encountered at index {i}. Terminating.");
-                                break;
-                            }
 
                             string strTrackWorksheet = trimmed;
                             string strHistoricTwistWorksheet = strTrackWorksheet + "_HistoricTwist";
@@ -754,11 +793,11 @@ CalibrationData:
                         Console.WriteLine(strAlarmMessage + "\n\n"); // multiline causes odd output alignment in console
                     }
 
-                    strAlarmMessage = strSMSTitle + ":" + strTimeNow + "\n" + strAlarmMessage;
+                    string SMSmessage = strSMSTitle + ":" + strTimeNow + "\n" + strAlarmMessage;
 
                     // Send the Alarm SMS 
 
-                    bool smsSuccess = gnaT.sendSMSArray(strAlarmMessage, smsMobile);
+                    bool smsSuccess = gnaT.sendSMSArray(SMSmessage, smsMobile);
                     Console.WriteLine(strTab1 + (smsSuccess ? "SMS sent" : "SMS failed"));
                     string strMessage = "";
                     if (smsSuccess == true)
@@ -770,7 +809,8 @@ CalibrationData:
                         strMessage = "SPN010 Alarm: SMS Alarm message failed";
                     }
 
-                    gnaT.updateSystemLogFile(strSystemLogsFolder, strMessage);
+                    logFileMessage = strMessage + "(" + smsMobile + ")";
+                    gnaT.updateSystemLogFile(strSystemLogsFolder, logFileMessage);
 
                 }
                 else
@@ -786,16 +826,28 @@ CalibrationData:
 //ExportWorkbook:
 
                 Console.WriteLine("10. Create the export workbook");
+
+                // Update the time stamp in case the software was put on hold waiting for a specific time..
+                strDateTime = DateTime.Now.ToString("yyyyMMdd_HHmm");
+                strExportFile = strExportFile.Replace("DateTime",strDateTime);
+
+
                 gnaSpreadsheetAPI.copyWorkbook(strMasterFile, strExportFile);
                 Console.WriteLine(strTab1 + strExportFile);
                 Console.WriteLine(strTab2 + "Done");
 
                 Console.WriteLine("11. Clean export workbook to match SPN010 template");
-                int j = 1;
-                do
+
+                // Start at 1 to skip element 0 (reference worksheet)
+                for (int j = 1; j < strTrackWorksheets.Count; j++)
                 {
                     string strTrackWorksheet = strTrackWorksheets[j].Trim();
+
+                    if (string.IsNullOrWhiteSpace(strTrackWorksheet))
+                        continue;   // or break; depending on how strict you want to be
+
                     Console.WriteLine(strTab1 + strTrackWorksheet);
+
                     // convert Columns 2 & 6 to numbers
                     Console.WriteLine(strTab2 + "Convert references to values");
                     gnaSpreadsheetAPI.convertWorksheetFormulae(strExportFile, strTrackWorksheet, iFirstOutputRow, 2, 2);    // Left rail reduced level at target
@@ -811,9 +863,10 @@ CalibrationData:
                     {
                         Console.WriteLine(strTab2 + "Missing data not deleted");
                     }
+                }
 
-                    j++;
-                } while (strTrackWorksheets[j] != "blank");
+
+
 
 
                 Console.WriteLine("12. Freeze the export workbook");
@@ -841,7 +894,7 @@ CalibrationData:
                     try
                     {
                         string strMessage = null;
-                        if (strAlarmMessage != "No alarms")
+                        if (strAlarmMessage != "No Alarm")
                         {
                             string strSPN010TriggerHeader =
     "SPN010 Trigger Criteria\n" +
@@ -872,12 +925,12 @@ CalibrationData:
 
                         strMessage = gnaT.addCopyright("SPN010", strMessage);
 
-                        // updated with the 20240816 license
+
                         // updated with the 20240816 license
                         string license = gnaT.commercialSoftwareLicense("email");
                         SmtpMail oMailEmail = new(license)
                         {
-                            //Set sender email address, please change it to yours
+                            //Set sender email address
                             From = strEmailFrom,
                             To = new AddressCollection(strEmailRecipients),
                             Subject = "SPN010: " + strProjectTitle + " (" + strDateTime + ")",
@@ -898,7 +951,9 @@ CalibrationData:
                         oSmtpEmail.SendMail(oServerEmail, oMailEmail);
                         strMessage = strReportSpec + " Track Geometry Report: " + strProjectTitle + " (" + strDateTime + ")" + " (emailed)";
 
-                        gnaT.updateSystemLogFile(strSystemLogsFolder, strMessage);
+
+                        logFileMessage = strMessage + "(" + strEmailRecipients + ")";
+                        gnaT.updateSystemLogFile(strSystemLogsFolder, logFileMessage);
                         gnaT.updateReportTime("SPN010");
 
                         Console.WriteLine(strTab1 + "Done");
