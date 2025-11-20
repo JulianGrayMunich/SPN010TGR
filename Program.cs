@@ -251,17 +251,11 @@ namespace SPN010
                 string strTab2 = "        ";
                 string strTab3 = "           ";
 
-
-
-
-
-
                 #endregion
-
 
                 #region Environment check
                 //==== Environment check
-                Console.WriteLine("\n1. Check system environmentxx");
+                Console.WriteLine("\n1. Check system environment");
                 Console.WriteLine(strTab1 + "Check DB connection");
                 gnaDBAPI.testDBconnection(strDBconnection);
                 Console.WriteLine(strTab2 + "Done");
@@ -285,21 +279,6 @@ namespace SPN010
                         gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strHistoricTopworksheet);
                     }
 
-
-
-
-                    //int i = 1;
-                    //do
-                    //{
-                    //    string strTrackWorksheet = strTrackWorksheets[i].Trim();
-                    //    gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet);
-
-                    //    if (strIncludeHistoricTwist == "Yes")
-                    //    {
-                    //        gnaSpreadsheetAPI.checkWorksheetExists(strMasterWorkbookFullPath, strTrackWorksheet + "_HistoricTwist");
-                    //    }
-                    //    i++;
-                    //} while (strTrackWorksheets[i] != "blank");
 
                     int i = 1;  // skip index 0 (reference worksheet)
 
@@ -772,7 +751,7 @@ CalibrationData:
                 #region Top,twist, missing targets alarms
 
 
-                Console.WriteLine("9. Top,Twist alarm state & SMS if alarms");
+                Console.WriteLine("9. Top,Twist,Long Twist, missing targets alarm state & SMS if alarms");
 
                 string strAlarmMessage = gnaSpreadsheetAPI.SPN010AlarmState(
                     strMasterFile,
@@ -809,7 +788,8 @@ CalibrationData:
                         strMessage = "SPN010 Alarm: SMS Alarm message failed";
                     }
 
-                    logFileMessage = strMessage + "(" + smsMobile + ")";
+                    string smsList = string.Join(",", smsMobile);
+                    logFileMessage = strMessage + "(" + smsList + ")";
                     gnaT.updateSystemLogFile(strSystemLogsFolder, logFileMessage);
 
                 }
@@ -920,7 +900,7 @@ CalibrationData:
                         }
                         else
                         {
-                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\nCurrent Project State: OK\n\nPlease review and forward to the client. \nDo not reply to this email.";
+                            strMessage = "This is an automated " + strReportSpec + " track geometry report.\n\nMissing prisms: None\nCurrent Project State: Top,Twist,Long Twist OK\n\nDo not reply to this email.";
                         }
 
                         strMessage = gnaT.addCopyright("SPN010", strMessage);
@@ -949,10 +929,8 @@ CalibrationData:
                         //Set sender email address, please change it to yours
                         SmtpClient oSmtpEmail = new();
                         oSmtpEmail.SendMail(oServerEmail, oMailEmail);
-                        strMessage = strReportSpec + " Track Geometry Report: " + strProjectTitle + " (" + strDateTime + ")" + " (emailed)";
-
-
-                        logFileMessage = strMessage + "(" + strEmailRecipients + ")";
+                        strMessage = strReportSpec + " Track Geometry Report: " + strProjectTitle + " (" + strDateTime + ")" + " (emailed:";
+                        logFileMessage = strMessage + strEmailRecipients + ")";
                         gnaT.updateSystemLogFile(strSystemLogsFolder, logFileMessage);
                         gnaT.updateReportTime("SPN010");
 
