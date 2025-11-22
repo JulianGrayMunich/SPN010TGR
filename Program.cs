@@ -761,7 +761,11 @@ CalibrationData:
 
                 string strTimeNow = DateTime.Now.ToString("HH'h'mm");
                 string strTempMessage = strSMSTitle + ":" + strTimeNow + "\n" + strAlarmMessage;
-                gnaT.pauseExecution(strStopAtAlarmMessage, strAlarmMessage);
+
+
+                string strMessage = "Time Window: " + strBlockSizeHrs + " hrs\nLatest value only: " + strLatestValueOnly + "\n" + strAlarmMessage;
+
+                gnaT.pauseExecution(strStopAtAlarmMessage, strMessage);
 
 
                 if (strAlarmMessage != "No Alarm")
@@ -769,6 +773,8 @@ CalibrationData:
                     if (strStopAtAlarmMessage == "No")
                     {
                         Console.WriteLine(strTab1 + "Alarms detected:\n");
+                        Console.WriteLine(strTab2 + "Time Window: " + strBlockSizeHrs + " hrs");
+                        Console.WriteLine(strTab2 + "Latest value only: " + strLatestValueOnly+"\n");
                         Console.WriteLine(strAlarmMessage + "\n\n"); // multiline causes odd output alignment in console
                     }
 
@@ -778,7 +784,7 @@ CalibrationData:
 
                     bool smsSuccess = gnaT.sendSMSArray(SMSmessage, smsMobile);
                     Console.WriteLine(strTab1 + (smsSuccess ? "SMS sent" : "SMS failed"));
-                    string strMessage = "";
+                    strMessage = "";
                     if (smsSuccess == true)
                     {
                         strMessage = "SPN010 Alarm: SMS Alarm message sent";
@@ -796,6 +802,8 @@ CalibrationData:
                 else
                 {
                     Console.WriteLine(strTab1 + "No alarms detected");
+                    Console.WriteLine(strTab2 + "Time Window: " + strBlockSizeHrs + " hrs");
+                    Console.WriteLine(strTab2 + "Latest value only: " + strLatestValueOnly + "\n");
                 }
 
 #endregion
@@ -873,7 +881,7 @@ CalibrationData:
 
                     try
                     {
-                        string strMessage = null;
+                        strMessage = null;
                         if (strAlarmMessage != "No Alarm")
                         {
                             string strSPN010TriggerHeader =
