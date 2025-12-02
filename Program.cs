@@ -455,7 +455,7 @@ namespace SPN010
                     else
                     {
                         int i = 1; // 1-based indexing retained
-                        string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
+                        string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim()[..^3].Replace(":", "h");
 
                         while (i < strTrackWorksheets.Count)
                         {
@@ -763,7 +763,7 @@ CalibrationData:
                 string strTempMessage = strSMSTitle + ":" + strTimeNow + "\n" + strAlarmMessage;
 
 
-                string strMessage = "Time Window: " + strBlockSizeHrs + " hrs\nLatest value only: " + strLatestValueOnly + "\n" + strAlarmMessage;
+                string strMessage = "Time Window: " + strBlockSizeHrs + " hrs\nLatest value only: " + strLatestValueOnly + "\n\n" + strAlarmMessage;
 
                 gnaT.pauseExecution(strStopAtAlarmMessage, strMessage);
 
@@ -772,9 +772,7 @@ CalibrationData:
                 {
                     if (strStopAtAlarmMessage == "No")
                     {
-                        Console.WriteLine(strTab1 + "Alarms detected:\n");
-                        Console.WriteLine(strTab2 + "Time Window: " + strBlockSizeHrs + " hrs");
-                        Console.WriteLine(strTab2 + "Latest value only: " + strLatestValueOnly+"\n");
+                        Console.WriteLine(strTab1 + "\nAlarms detected:\n");
                         Console.WriteLine(strAlarmMessage + "\n\n"); // multiline causes odd output alignment in console
                     }
 
@@ -802,8 +800,6 @@ CalibrationData:
                 else
                 {
                     Console.WriteLine(strTab1 + "No alarms detected");
-                    Console.WriteLine(strTab2 + "Time Window: " + strBlockSizeHrs + " hrs");
-                    Console.WriteLine(strTab2 + "Latest value only: " + strLatestValueOnly + "\n");
                 }
 
 #endregion
@@ -853,16 +849,13 @@ CalibrationData:
                     }
                 }
 
-
-
-
-
                 Console.WriteLine("12. Freeze the export workbook");
                 Console.WriteLine(strTab1 + "Hide " + strReferenceWorksheet);
                 gnaSpreadsheetAPI.hideWorksheet(strExportFile, strReferenceWorksheet);
-                Console.WriteLine(strTab2 + "Done");
-                Console.WriteLine(strTab1 + "Hide " + strReferenceWorksheet);
+                Console.WriteLine(strTab1 + "Hide " + strAlarmsWorksheet);
                 gnaSpreadsheetAPI.hideWorksheet(strExportFile, strAlarmsWorksheet);
+                Console.WriteLine(strTab1 + "Hide " + strSurveyWorksheet);
+                gnaSpreadsheetAPI.hideWorksheet(strExportFile, strSurveyWorksheet);
                 Console.WriteLine(strTab2 + "Done");
                 Console.WriteLine(strTab1 + "Freeze " + strExportFile);
                 gnaSpreadsheetAPI.freezeWorkbook(strExportFile, strWorkbookPassword);
