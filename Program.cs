@@ -455,7 +455,7 @@ namespace SPN010
                     else
                     {
                         int i = 1; // 1-based indexing retained
-                        string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim()[..^3].Replace(":", "h");
+                        string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
 
                         while (i < strTrackWorksheets.Count)
                         {
@@ -473,7 +473,7 @@ namespace SPN010
                             string strTrackWorksheet = trimmed;
                             string strHistoricTwistWorksheet = strTrackWorksheet + "_HistoricTwist";
 
-                            Console.WriteLine(strTab1 + strHistoricTwistWorksheet);
+                            Console.WriteLine(strTab2 + strHistoricTwistWorksheet);
 
                             // Defensive: ensure API call returns a positive column index
                             int iFirstEmptyCol = gnaSpreadsheetAPI.findFirstEmptyColumn(
@@ -572,7 +572,7 @@ namespace SPN010
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricSettlement) &&
                     strIncludeHistoricSettlement.Trim().Equals("Yes", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine(strTab1 + "Activated");
+                    Console.WriteLine(strTab2 + "Activated");
 
                     string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
 
@@ -659,7 +659,7 @@ namespace SPN010
                 if (!string.IsNullOrWhiteSpace(strIncludeHistoricTop) &&
                     strIncludeHistoricTop.Trim().Equals("Yes", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine(strTab1 + "Activated");
+                    Console.WriteLine(strTab2 + "Activated");
 
                     string strHeaderTime = strTimeBlockEndLocal.Replace("'", "").Trim();
 
